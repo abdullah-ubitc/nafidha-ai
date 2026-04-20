@@ -1,0 +1,40 @@
+# FastAPI / Python gitignore
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Logs and runtime files
+*.log
+logs/
+
+# Application files to ignore
+uploads/
+reg_uploads/
+*.sqlite3
+*.db
+
+# Test and coverage
+.pytest_cache/
+.coverage
+
+# Type checking / caches
+.mypy_cache/
+pip-wheel-metadata/
+
+# IDE/editor folders
+.vscode/
+.idea/

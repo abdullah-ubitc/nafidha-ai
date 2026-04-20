@@ -1,0 +1,24 @@
+# Conda-specific gitignore
+# Conda caches and package metadata
+.conda/
+conda-meta/
+pkgs/
+envs/
+*.conda
+*.tar.bz2
+
+# Local environment dirs
+env/
+venv/
+.venv/
+*.env
+
+# Conda lock and config
+.conda-lock.yml
+conda-lock.yml
+.condarc
+
+# Temporary / editor
+.cache/
+.vscode/
+.idea/
