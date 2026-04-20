@@ -53,3 +53,5 @@ make start
 ```
 
 The `make start` target runs `docker-compose up --build -d` for convenience.
+
+https://drive.google.com/drive/folders/1t9DxxZTKPFdInJ-SQpmwkPaj6xhXym1e?usp=sharing
