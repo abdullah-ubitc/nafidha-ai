@@ -102,48 +102,10 @@ async def get_dynamic_price() -> float:
 
 async def check_and_deduct_balance(user_id: str) -> Tuple[bool, str, float, float]:
     """
-    يتحقق من رصيد محفظة OCR للمستخدم ويخصم تكلفة المسحة ذرّياً.
-
-    Returns:
-        (allowed: bool, message: str, cost_usd: float, remaining_balance: float)
+    عطّلت هذه الدالة لتعمل دائماً بنجاح (Public Access) بناءً على طلب المستخدم.
+    كانت تتحقق سابقاً من رصيد محفظة OCR.
     """
-    cost = await get_dynamic_price()
-
-    # جلب الحد الأدنى من system_pricing
-    try:
-        pricing = await db.system_pricing.find_one({"service_type": "ocr_scan"})
-        min_bal = float(pricing.get("min_balance_usd", cost)) if pricing else cost
-    except Exception:
-        min_bal = cost
-
-    # جلب محفظة المستخدم
-    wallet = await db.ocr_wallets.find_one({"user_id": user_id})
-    current_balance = wallet["balance_usd"] if wallet else 0.0
-
-    if current_balance < min_bal:
-        return False, "رصيد OCR غير كافٍ — اشترِ باقة من محفظة OCR لمتابعة المسح", cost, current_balance
-
-    # خصم ذرّي — يمنع التنافس
-    now = datetime.now(timezone.utc).isoformat()
-    result = await db.ocr_wallets.find_one_and_update(
-        {"user_id": user_id, "balance_usd": {"$gte": cost}},
-        {
-            "$inc": {"balance_usd": -cost, "total_spent_usd": cost},
-            "$set": {"updated_at": now},
-        },
-        return_document=True,
-    )
-    if not result:
-        return False, "رصيد OCR غير كافٍ — اشترِ باقة من محفظة OCR لمتابعة المسح", cost, current_balance
-
-    # تنبيه رصيد منخفض: عندما يصل أقل من 5 مسحات
-    remaining_after = result["balance_usd"]
-    low_threshold = cost * 5
-    if 0 < remaining_after <= low_threshold:
-        import asyncio as _asyncio
-        _asyncio.ensure_future(_notify_low_balance(user_id, remaining_after, cost))
-
-    return True, "تم الخصم من محفظة OCR", cost, remaining_after
+    return True, "تم السماح بالوصول العام", 0.0, 0.0
 
 
 async def _notify_low_balance(user_id: str, remaining: float, cost: float):

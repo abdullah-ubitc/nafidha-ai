@@ -9,18 +9,16 @@ GET  /ocr/usage/summary     — ملخص التكاليف للمدير
 import json
 import re
 import base64
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from bson import ObjectId
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from auth_utils import get_current_user, require_roles
 from database import db
 from helpers import format_doc
-from models import UserRole
-from services.ocr_service import scan_and_match, get_shipment_cost, DOC_SCHEMAS, check_and_deduct_balance
+from services.ocr_service import scan_and_match, get_shipment_cost, DOC_SCHEMAS
 from services.ollama_client import ollama_chat_vision
 
 router = APIRouter(prefix="/ocr", tags=["ocr"])
@@ -31,16 +29,12 @@ router = APIRouter(prefix="/ocr", tags=["ocr"])
 @router.post("/extract-cr")
 async def extract_cr(
     file: UploadFile = File(...),
-    current_user=Depends(get_current_user),
 ):
     """
     استخراج رقم السجل التجاري وتاريخ انتهاء الصلاحية من صورة مرفوعة.
     يدعم PDF (أول صفحة) وصور JPG/PNG.
     """
-    # فحص رصيد المحفظة
-    allowed, balance_msg, cost_usd, remaining = await check_and_deduct_balance(str(current_user["_id"]))
-    if not allowed:
-        raise HTTPException(402, balance_msg)
+    # No balance check required for public access
 
     content = await file.read()
     ext = (file.filename or "").rsplit(".", 1)[-1].lower()
@@ -106,16 +100,12 @@ async def extract_cr(
 @router.post("/extract-container")
 async def extract_container_code(
     file: UploadFile = File(...),
-    current_user=Depends(get_current_user),
 ):
     """
     استخراج رمز/رقم الحاوية من صورة التقطتها كاميرا المفتش.
     رمز الحاوية: 4 أحرف + 7 أرقام (مثال: ABCD1234567) وفق معيار ISO 6346.
     """
-    # فحص رصيد المحفظة
-    allowed, balance_msg, cost_usd, remaining = await check_and_deduct_balance(str(current_user["_id"]))
-    if not allowed:
-        raise HTTPException(402, balance_msg)
+    # No balance check required for public access
 
     content = await file.read()
     img_b64 = base64.b64encode(content).decode()
@@ -171,7 +161,6 @@ async def scan_document(
     file:      UploadFile = File(...),
     doc_type:  str        = Form(...),   # invoice | certificate_of_origin | passport | bill_of_lading
     acid_id:   str        = Form(""),    # لربط النتيجة بالشحنة
-    current_user=Depends(get_current_user),
 ):
     """
     Core OCR endpoint — يقرأ الوثيقة ويطابق القيم مع بيانات ACID في DB.
@@ -208,20 +197,10 @@ async def scan_document(
              "goods_description": 1, "hs_code": 1, "port_of_entry": 1, "transport_mode": 1}
         )
 
-    # ── فحص رصيد محفظة OCR وخصم التكلفة ─────────────────────
-    user_id_str = str(current_user["_id"])
-    allowed, balance_msg, cost_usd, remaining_balance = await check_and_deduct_balance(user_id_str)
-    if not allowed:
-        return JSONResponse(
-            status_code=402,
-            content={
-                "ocr_failed":      True,
-                "error_message":   balance_msg,
-                "error_code":      "INSUFFICIENT_OCR_BALANCE",
-                "remaining_balance_usd": remaining_balance,
-                "cost_usd":        cost_usd,
-            }
-        )
+    # ── فحص رصيد محفظة OCR وخصم التكلفة (Public Access) ──────────
+    user_id_str = "public"
+    cost_usd = 0.0
+    remaining_balance = 0.0
 
     # ── استدعاء الخدمة المركزية (التكلفة مخصومة مسبقاً) ────────
     result = await scan_and_match(
@@ -247,7 +226,6 @@ async def scan_document(
 @router.get("/usage/{acid_id}")
 async def shipment_ocr_usage(
     acid_id: str,
-    current_user=Depends(get_current_user),
 ):
     """إجمالي تكاليف عمليات OCR لشحنة محددة."""
     if not ObjectId.is_valid(acid_id):
@@ -269,9 +247,7 @@ async def shipment_ocr_usage(
 # ═══════════════════════════════════════════════════════════════
 
 @router.get("/usage-summary")
-async def ocr_usage_summary(
-    current_user=Depends(require_roles(UserRole.ADMIN)),
-):
+async def ocr_usage_summary():
     """ملخص إداري لتكاليف الـ OCR حسب الشحنة ونوع الوثيقة."""
     pipeline = [
         {"$group": {
@@ -308,7 +284,6 @@ async def ocr_usage_summary(
 async def kyc_scan_document(
     file:     UploadFile = File(...),
     doc_type: str        = Form(...),   # passport | national_id | commercial_registry
-    current_user=Depends(get_current_user),
 ):
     """
     مسح وثيقة KYC أثناء التسجيل — مجاني (بدون خصم من محفظة OCR).

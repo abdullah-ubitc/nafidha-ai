@@ -130,6 +130,10 @@ app.include_router(ports_router,         prefix=API_PREFIX)
 app.include_router(ocr_wallet_router,    prefix=API_PREFIX)
 app.include_router(service_pricing_router, prefix=API_PREFIX)
 
+@app.get("/api/ping")
+async def ping_test_debug():
+    return {"status": "ok", "message": "Server is running latest code (Neutered OCR Auth/Balance)"}
+
 
 # ── Stripe Webhook Endpoint ────────────────────────────────────────────────────
 @app.post("/api/webhook/stripe")
