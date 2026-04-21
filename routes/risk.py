@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/analyze/{acid_id}")
-async def analyze_risk(acid_id: str, current_user=Depends(get_current_user)):
+async def analyze_risk(acid_id: str):
     req = await db.acid_requests.find_one({"_id": ObjectId(acid_id)}) if ObjectId.is_valid(acid_id) else None
     if not req:
         req = await db.acid_requests.find_one({"acid_number": acid_id})
@@ -43,7 +43,7 @@ async def analyze_risk(acid_id: str, current_user=Depends(get_current_user)):
 
 
 @router.post("/ai-analyze")
-async def ai_analyze_risk(data: AIRiskInput, current_user=Depends(get_current_user)):
+async def ai_analyze_risk(data: AIRiskInput):
     system_prompt = f"""أنت خبير تقييم مخاطر الجمارك الليبية. تحلل طلبات الاستيراد وتقيّم مستوى المخاطر.
 قائمة البضائع المحظورة والمقيدة في ليبيا:
 {LIBYA_PROHIBITED_ITEMS}
