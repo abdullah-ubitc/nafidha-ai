@@ -32,7 +32,7 @@ docker network create libya-net
 docker run -d --name libya-mongo --network libya-net -p 27017:27017 mongo:6
 
 # run the app pointing to the mongo container
-docker run -p 8001:8001 --name libya-customs \
+docker run -p 8000:8000 --name libya-customs \
   --network libya-net \
   -e MONGO_URL='mongodb://libya-mongo:27017' \
   -e DB_NAME='libya_customs_db' \

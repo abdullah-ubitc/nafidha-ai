@@ -23,10 +23,9 @@ RUN pip install --no-cache-dir -r requirements.txt \
 # نسخ الكود
 COPY . .
 
-RUN pip install --no-cache-dir --timeout 900 --retries 10 emergentintegrations==0.1.0 \
 # إنشاء مجلدات الرفع
 RUN mkdir -p uploads reg_uploads
 
-EXPOSE 8001
+EXPOSE 8000
 
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "2"]
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

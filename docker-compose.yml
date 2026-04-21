@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: nafidha_ai
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URL=mongodb://db:27017
+    env_file:
+      - .env
+    volumes:
+      - ./uploads:/app/uploads
+      - ./reg_uploads:/app/reg_uploads
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: mongo:latest
+    container_name: nafidha_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+
+volumes:
+  mongo_data:
