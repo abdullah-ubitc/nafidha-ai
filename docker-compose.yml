@@ -8,6 +8,9 @@ services:
       - "8000:8000"
     environment:
       - MONGO_URL=mongodb://db:27017
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_VISION_MODEL=qwen3.5:4b
+      - OLLAMA_TEXT_MODEL=aya:8b
     env_file:
       - .env
     volumes:
@@ -15,6 +18,7 @@ services:
       - ./reg_uploads:/app/reg_uploads
     depends_on:
       - db
+      - ollama
     restart: always
 
   db:
@@ -26,5 +30,33 @@ services:
       - mongo_data:/data/db
     restart: always
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: always
+
+  ollama-pull-models:
+    image: curlimages/curl:latest
+    container_name: ollama_puller
+    depends_on:
+      - ollama
+    entrypoint: /bin/sh
+    command: >
+      -c "sleep 5; 
+      curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"qwen3.5:4b\"}';
+      curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"aya:8b\"}';"
+
 volumes:
   mongo_data:
+  ollama_data:
